@@ -1,11 +1,11 @@
-{
+﻿{
   "expo": {
-    "name": "FocusLock",
+    "name": "Focus Lock",
     "slug": "FocusLock",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true
     },
@@ -23,3 +23,4 @@
     }
   }
 }
+
