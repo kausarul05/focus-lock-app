@@ -2,16 +2,20 @@
   "expo": {
     "name": "Focus Lock",
     "slug": "FocusLock",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F7F3E8",
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.kausarul.focuslock",
+      "versionCode": 2,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#EAF2E3",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -20,7 +24,21 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#4F9D69"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "18e8c3b2-985c-4ded-899d-5660e6598854"
+      }
+    },
+    "owner": "kausarul"
   }
 }
-

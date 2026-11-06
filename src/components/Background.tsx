@@ -3,6 +3,8 @@ import { StyleSheet } from 'react-native';
 import Svg, {
   Circle,
   Defs,
+  Ellipse,
+  G,
   LinearGradient,
   Path,
   RadialGradient,
@@ -10,13 +12,20 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
-const STARS: [number, number, number][] = [
-  [40, 90, 1.4], [120, 40, 1], [210, 120, 1.6], [330, 70, 1.2], [370, 190, 1],
-  [70, 230, 1], [290, 260, 1.4], [160, 310, 1], [350, 360, 1.2], [20, 400, 1],
-  [250, 430, 1], [100, 470, 1.4],
+// Distant tree line: [x, scale]
+const RIDGE: [number, number][] = [
+  [18, 0.9], [52, 1.15], [88, 0.8], [124, 1.05], [166, 0.85],
+  [206, 1.2], [248, 0.9], [284, 1.1], [322, 0.85], [358, 1.0], [390, 0.9],
 ];
 
-// Night-sky scene with soft glows and layered hills, drawn as vector so no asset is needed
+const Pine = ({ x, s }: { x: number; s: number }) => (
+  <G opacity={0.5}>
+    <Path d={`M${x} ${652 - 46 * s} L${x + 15 * s} ${660} L${x - 15 * s} ${660} Z`} fill="#9CBE93" />
+    <Path d={`M${x} ${652 - 30 * s} L${x + 12 * s} ${648} L${x - 12 * s} ${648} Z`} fill="#8AB183" />
+  </G>
+);
+
+// Soft daylight meadow, drawn as vector so the app still needs no image assets
 export default function Background() {
   return (
     <Svg
@@ -28,28 +37,42 @@ export default function Background() {
     >
       <Defs>
         <LinearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#050818" />
-          <Stop offset="0.6" stopColor="#0E1431" />
-          <Stop offset="1" stopColor="#1B1B4B" />
+          <Stop offset="0" stopColor="#D9EAEF" />
+          <Stop offset="0.42" stopColor="#F0F0E3" />
+          <Stop offset="1" stopColor="#F7F3E8" />
         </LinearGradient>
-        <RadialGradient id="glowA" cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor="#7C5CFF" stopOpacity="0.22" />
-          <Stop offset="1" stopColor="#7C5CFF" stopOpacity="0" />
+        <RadialGradient id="sun" cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor="#FFE5A8" stopOpacity="0.75" />
+          <Stop offset="1" stopColor="#FFE5A8" stopOpacity="0" />
         </RadialGradient>
-        <RadialGradient id="glowB" cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor="#2DD4A8" stopOpacity="0.14" />
-          <Stop offset="1" stopColor="#2DD4A8" stopOpacity="0" />
-        </RadialGradient>
+        <LinearGradient id="hillA" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#CFE3C4" />
+          <Stop offset="1" stopColor="#BFD9B6" />
+        </LinearGradient>
+        <LinearGradient id="hillB" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#B4D2A8" />
+          <Stop offset="1" stopColor="#A4C799" />
+        </LinearGradient>
       </Defs>
+
       <Rect width="400" height="800" fill="url(#sky)" />
-      <Circle cx="340" cy="60" r="300" fill="url(#glowA)" />
-      <Circle cx="40" cy="520" r="260" fill="url(#glowB)" />
-      {STARS.map(([x, y, r], i) => (
-        <Circle key={i} cx={x} cy={y} r={r} fill="#FFFFFF" opacity={0.55} />
+      <Circle cx="330" cy="70" r="210" fill="url(#sun)" />
+      <Circle cx="330" cy="70" r="26" fill="#FFD98A" opacity="0.55" />
+
+      <G opacity="0.55" fill="#FFFFFF">
+        <Ellipse cx="90" cy="150" rx="46" ry="16" />
+        <Ellipse cx="120" cy="142" rx="30" ry="18" />
+        <Ellipse cx="286" cy="236" rx="38" ry="13" />
+        <Ellipse cx="310" cy="230" rx="24" ry="15" />
+      </G>
+
+      {RIDGE.map(([x, s], i) => (
+        <Pine key={i} x={x} s={s} />
       ))}
-      <Path d="M0 640 C 70 590 140 600 210 630 C 290 665 340 620 400 600 L400 800 L0 800 Z" fill="#16164A" opacity="0.7" />
-      <Path d="M0 700 C 90 660 170 690 250 705 C 320 718 360 690 400 675 L400 800 L0 800 Z" fill="#0F1237" opacity="0.9" />
-      <Path d="M0 760 C 100 735 200 760 290 765 C 340 768 375 755 400 748 L400 800 L0 800 Z" fill="#090B24" />
+
+      <Path d="M0 660 C 80 628 150 650 230 662 C 300 672 350 656 400 644 L400 800 L0 800 Z" fill="url(#hillA)" />
+      <Path d="M0 716 C 90 690 180 712 260 722 C 322 730 364 718 400 708 L400 800 L0 800 Z" fill="url(#hillB)" />
+      <Path d="M0 768 C 110 748 210 768 300 772 C 346 774 376 766 400 760 L400 800 L0 800 Z" fill="#93BB89" opacity="0.9" />
     </Svg>
   );
 }

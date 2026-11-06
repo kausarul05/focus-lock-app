@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
   NativeScrollEvent,
@@ -17,10 +17,19 @@ const PAD = ITEM_H * Math.floor(VISIBLE / 2);
 type WheelProps = { count: number; value: number; onChange: (v: number) => void; label: string };
 
 function Wheel({ count, value, onChange, label }: WheelProps) {
-  const scrollY = useRef(new Animated.Value(value * ITEM_H)).current;
+  // Created once: the wheel only takes `value` as its starting offset
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const scrollY = useMemo(() => new Animated.Value(value * ITEM_H), []);
   const last = useRef(value);
   const ref = useRef<React.ComponentRef<typeof Animated.ScrollView>>(null);
-  const data = useRef(Array.from({ length: count }, (_, i) => i)).current;
+  const data = useMemo(() => Array.from({ length: count }, (_, i) => i), [count]);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() =>
+      ref.current?.scrollTo({ y: last.current * ITEM_H, animated: false }),
+    );
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const indexOf = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
     Math.min(count - 1, Math.max(0, Math.round(e.nativeEvent.contentOffset.y / ITEM_H)));
@@ -39,6 +48,7 @@ function Wheel({ count, value, onChange, label }: WheelProps) {
         contentOffset={{ x: 0, y: value * ITEM_H }}
         // contentOffset is iOS-only, so also jump to the saved value on Android
         onLayout={() => ref.current?.scrollTo({ y: value * ITEM_H, animated: false })}
+        // eslint-disable-next-line react-hooks/refs -- the listener runs on scroll, not during render
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
           useNativeDriver: true,
           listener: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -108,9 +118,9 @@ const styles = StyleSheet.create({
     top: PAD,
     height: ITEM_H,
     borderRadius: radius.md,
-    backgroundColor: colors.card,
+    backgroundColor: colors.primarySoft,
     borderWidth: 1,
-    borderColor: colors.cardBorder,
+    borderColor: 'rgba(79,157,105,0.25)',
   },
   row: { flexDirection: 'row', justifyContent: 'center', height: ITEM_H * VISIBLE },
   col: { width: 104, height: ITEM_H * VISIBLE },
@@ -119,7 +129,7 @@ const styles = StyleSheet.create({
     lineHeight: ITEM_H,
     textAlign: 'center',
     color: colors.text,
-    fontSize: 30,
+    fontSize: 29,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
     paddingRight: 30,

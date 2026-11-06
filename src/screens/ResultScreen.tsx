@@ -1,22 +1,25 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, radius } from '../theme';
+import { colors, radius, shadow } from '../theme';
 import { Result, Settings } from '../types';
 import { formatDuration } from '../format';
-import { levelTitle, pick, PRAISE, QUIT_LINES, REWARD_BADGES } from '../content';
+import { levelTitle, REWARD_BADGES } from '../content';
 import Confetti from '../components/Confetti';
 import Button from '../components/Button';
+import Tree from '../components/Tree';
 
 type Props = { result: Result; settings: Settings; onDone: () => void };
 
 export default function ResultScreen({ result, settings, onDone }: Props) {
-  const pop = useRef(new Animated.Value(0)).current;
-  const line = useRef(result.completed ? pick(PRAISE) : pick(QUIT_LINES)).current;
-  const badge = [...REWARD_BADGES].reverse().find((b) => result.plannedMin >= b.min)!;
+  const pop = useMemo(() => new Animated.Value(0), []);
+  const badge = useMemo(
+    () => [...REWARD_BADGES].reverse().find((b) => result.plannedMin >= b.min)!,
+    [result.plannedMin],
+  );
 
   useEffect(() => {
-    Animated.spring(pop, { toValue: 1, friction: 4, tension: 60, useNativeDriver: true }).start();
+    Animated.spring(pop, { toValue: 1, friction: 5, tension: 70, useNativeDriver: true }).start();
     if (result.completed) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
@@ -24,34 +27,31 @@ export default function ResultScreen({ result, settings, onDone }: Props) {
 
   const title = result.completed
     ? settings.name
-      ? `Well done, ${settings.name}`
-      : 'Goal complete'
-    : 'Session ended';
+      ? 'Well done, ' + settings.name
+      : 'Tree planted'
+    : 'Your tree withered';
+
+  // A partly finished session leaves a half-grown, dried-out tree
+  const stage = result.completed
+    ? 1
+    : Math.max(0.25, Math.min(0.9, result.focusedMin / Math.max(1, result.plannedMin)));
 
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.wrap}>
-        <Animated.View
-          style={[
-            styles.icon,
-            { transform: [{ scale: pop }] },
-            { backgroundColor: result.completed ? colors.accent : colors.card },
-          ]}
-        >
-          <Text style={[styles.iconTxt, { color: result.completed ? colors.bg : colors.muted }]}>
-            {result.completed ? '✓' : '–'}
-          </Text>
+        <Animated.View style={[styles.treeWrap, { transform: [{ scale: pop }] }]}>
+          <Tree size={168} stage={stage} withered={!result.completed} />
         </Animated.View>
 
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.line}>{line}</Text>
+        <Text style={styles.line}>{result.line}</Text>
 
         <View style={styles.statsRow}>
           <Cell label="Focused" value={formatDuration(result.focusedMin)} />
           <View style={styles.vline} />
           <Cell label="Planned" value={formatDuration(result.plannedMin)} />
           <View style={styles.vline} />
-          <Cell label="XP earned" value={`+${result.xpGained}`} color={colors.accent} />
+          <Cell label="XP earned" value={'+' + result.xpGained} color={colors.primaryDeep} />
         </View>
 
         <View style={styles.card}>
@@ -62,8 +62,10 @@ export default function ResultScreen({ result, settings, onDone }: Props) {
         {result.completed && (
           <View style={[styles.card, styles.rewardCard]}>
             <Text style={[styles.cardLbl, { color: colors.gold }]}>REWARD UNLOCKED</Text>
-            <Text style={[styles.cardTxt, { color: colors.gold }]}>{badge.name}</Text>
-            {!!settings.mainGoal && <Text style={styles.myReward}>One step closer to: {settings.mainGoal}</Text>}
+            <Text style={[styles.cardTxt, { color: '#B9821F' }]}>{badge.name}</Text>
+            {!!settings.mainGoal && (
+              <Text style={styles.myReward}>One step closer to: {settings.mainGoal}</Text>
+            )}
           </View>
         )}
 
@@ -75,7 +77,7 @@ export default function ResultScreen({ result, settings, onDone }: Props) {
         <Button
           label={result.completed ? 'Done' : 'Try again'}
           onPress={onDone}
-          style={{ marginTop: 28, alignSelf: 'stretch' }}
+          style={{ marginTop: 26, alignSelf: 'stretch' }}
         />
       </ScrollView>
       {result.completed && <Confetti />}
@@ -91,28 +93,43 @@ const Cell = ({ label, value, color }: { label: string; value: string; color?: s
 );
 
 const styles = StyleSheet.create({
-  wrap: { padding: 24, alignItems: 'center', paddingTop: 56 },
-  icon: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center' },
-  iconTxt: { fontSize: 48, fontWeight: '700' },
-  title: { color: colors.text, fontSize: 28, fontWeight: '800', marginTop: 24, textAlign: 'center' },
-  line: { color: colors.muted, fontSize: 16, textAlign: 'center', marginTop: 8, marginBottom: 32, lineHeight: 23, paddingHorizontal: 12 },
-  statsRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', marginBottom: 28 },
+  wrap: { padding: 24, alignItems: 'center', paddingTop: 34, paddingBottom: 32 },
+  treeWrap: { alignItems: 'center', justifyContent: 'center' },
+  title: { color: colors.text, fontSize: 27, fontWeight: '800', marginTop: 8, textAlign: 'center' },
+  line: {
+    color: colors.textSoft,
+    fontSize: 15.5,
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 26,
+    lineHeight: 22,
+    paddingHorizontal: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    marginBottom: 14,
+    paddingVertical: 18,
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    ...shadow.card,
+  },
   vline: { width: 1, height: 28, backgroundColor: colors.cardBorder },
-  cellVal: { color: colors.text, fontSize: 22, fontWeight: '700' },
-  cellLbl: { color: colors.muted, fontSize: 12, marginTop: 2 },
+  cellVal: { color: colors.text, fontSize: 21, fontWeight: '800' },
+  cellLbl: { color: colors.muted, fontSize: 11.5, marginTop: 3, fontWeight: '600' },
   card: {
     alignSelf: 'stretch',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
+    backgroundColor: colors.white,
     borderRadius: radius.md,
     padding: 18,
     marginBottom: 12,
+    ...shadow.card,
   },
-  rewardCard: { borderColor: colors.gold },
-  cardLbl: { color: colors.muted, fontSize: 11, letterSpacing: 1.5 },
-  cardTxt: { color: colors.text, fontSize: 18, fontWeight: '600', marginTop: 6 },
-  myReward: { color: colors.text, marginTop: 8, fontSize: 15 },
-  footer: { color: colors.muted, fontSize: 14, marginTop: 16 },
-  levelUp: { color: colors.accent, fontWeight: '700', marginTop: 8 },
+  rewardCard: { backgroundColor: '#FDF4DF' },
+  cardLbl: { color: colors.muted, fontSize: 10.5, letterSpacing: 1.4, fontWeight: '700' },
+  cardTxt: { color: colors.text, fontSize: 17.5, fontWeight: '700', marginTop: 6 },
+  myReward: { color: colors.textSoft, marginTop: 8, fontSize: 14.5, lineHeight: 21 },
+  footer: { color: colors.muted, fontSize: 13.5, marginTop: 14, fontWeight: '600' },
+  levelUp: { color: colors.primaryDeep, fontWeight: '800', marginTop: 6 },
 });

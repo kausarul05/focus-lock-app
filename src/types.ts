@@ -28,6 +28,8 @@ export type ActiveSession = {
 
 export type Result = {
   completed: boolean;
+  /** Closing line, chosen when the session ends */
+  line: string;
   goal: string;
   plannedMin: number;
   focusedMin: number;

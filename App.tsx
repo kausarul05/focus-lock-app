@@ -16,7 +16,8 @@ import {
   saveSettings,
   saveStats,
 } from './src/storage';
-import { levelFromXp } from './src/content';
+import { levelFromXp, pick, PRAISE, QUIT_LINES } from './src/content';
+import { askNotificationPermission, syncSessionReminder } from './src/notify';
 import Background from './src/components/Background';
 import TabBar from './src/components/TabBar';
 import HomeScreen from './src/screens/HomeScreen';
@@ -44,11 +45,21 @@ export default function App() {
     });
   }, []);
 
+  // One scheduled reminder always mirrors the active session: it is rebuilt on
+  // every change and on every cold start, so a reboot cannot lose it
+  useEffect(() => {
+    if (ready) syncSessionReminder(active);
+  }, [ready, active]);
+
   const start = useCallback((goal: string, seconds: number) => {
     const totalMs = seconds * 1000;
     const session = { goal, totalMs, endAt: Date.now() + totalMs };
     saveActive(session);
     setActive(session);
+    // Ask the first time a tree is planted, then schedule once the answer is in
+    askNotificationPermission().then((ok) => {
+      if (ok) syncSessionReminder(session);
+    });
   }, []);
 
   const shiftEnd = useCallback((endAt: number) => {
@@ -98,6 +109,7 @@ export default function App() {
       setActive(null);
       setResult({
         completed,
+        line: completed ? pick(PRAISE) : pick(QUIT_LINES),
         goal: session.goal,
         plannedMin,
         focusedMin,
@@ -121,9 +133,9 @@ export default function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={{ backgroundColor: colors.bg }}>
       <Background />
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <SafeAreaView style={{ flex: 1 }}>
         {!ready ? (
           <View style={styles.center}>
@@ -142,10 +154,15 @@ export default function App() {
         ) : (
           <>
             <View style={{ flex: 1 }}>
-              {tab === 'home' && <HomeScreen settings={settings} onStart={start} />}
+              {tab === 'home' && <HomeScreen settings={settings} stats={stats} onStart={start} />}
               {tab === 'history' && <HistoryScreen stats={stats} />}
               {tab === 'settings' && (
-                <SettingsScreen settings={settings} onSave={updateSettings} onReset={resetHistory} />
+                <SettingsScreen
+                  settings={settings}
+                  stats={stats}
+                  onSave={updateSettings}
+                  onReset={resetHistory}
+                />
               )}
             </View>
             <TabBar tab={tab} onChange={setTab} />
